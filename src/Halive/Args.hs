@@ -4,62 +4,28 @@ module Halive.Args
     ( Args(..)
     , FileType
     , parseArgs
-    , usage) where
+    ) where
 
 type FileType = String
 
 data Args = Args
-    { mainFileName  :: String
-    , includeDirs   :: [String]
-    , fileTypes     :: [FileType]
-    , targetArgs    :: [String]
+    { targetArgs    :: [String]
     , shouldCompile :: Bool
+    , cfgPath :: Maybe String
     }
-
-data PartialArgs = PartialArgs
-    { mainFileName'  :: Maybe String
-    , includeDirs'   :: [String]
-    , fileTypes'     :: [FileType]
-    , targetArgs'    :: [String]
-    , shouldCompile' :: Bool
-    }
-
-usage :: String
-usage = "Usage: halive <main.hs> [<include dir>] [-f|--file-type <file type>] [-c|--compiled] [-- <args to myapp>]\n\
-        \\n\
-        \Available options:\n\
-        \  -f, --file-type <file type>     Custom file type to watch for changes (e.g. \"-f html\")\n\
-        \  -c, --compiled                  Faster code (but slower compilation)"
-
 
 parseArgs :: [String] -> Maybe Args
-parseArgs args = go args (PartialArgs Nothing [] [] [] False) >>= fromPartial
+parseArgs args = go args (Args [] False Nothing)
     where
-        go :: [String] -> PartialArgs -> Maybe PartialArgs
-        go [] partial = Just partial
-        go (x : xs) partial
-            | x == "--" = Just partial { targetArgs' = xs }
-            | x == "-f" || x == "--file-type" =
+        go :: [String] -> Args -> Maybe Args
+        go [] args' = Just args'
+        go (x : xs) args'
+            | x == "--" = Just args' { targetArgs = xs }
+            | x == "-c" || x == "--compiled" =
+                go xs $ args' { shouldCompile = True }
+            | x == "-cfg" =
                 case xs of
                     []               -> Nothing
                     ("--" : _)       -> Nothing
-                    (fileType : xs') -> go xs' $ partial { fileTypes' = fileType : fileTypes' partial }
-            | x == "-c" || x == "--compiled" =
-                go xs $ partial { shouldCompile' = True }
-            | otherwise =
-                case mainFileName' partial of
-                    Nothing -> go xs $ partial { mainFileName' = Just x }
-                    Just _  -> go xs $ partial { includeDirs' = x : includeDirs' partial}
-
-fromPartial :: PartialArgs -> Maybe Args
-fromPartial PartialArgs {..} =
-    case mainFileName' of
-        Nothing -> Nothing
-        Just mfn -> Just Args
-                            { mainFileName  = mfn
-                            , includeDirs   = includeDirs'
-                            , fileTypes     = fileTypes'
-                            , targetArgs    = targetArgs'
-                            , shouldCompile = shouldCompile'
-                            }
-
+                    (cfgPath' : xs') -> go xs' $ args' { cfgPath = Just cfgPath' }
+            | otherwise = Nothing

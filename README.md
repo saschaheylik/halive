@@ -1,14 +1,19 @@
-```
-██╗  ██╗ █████╗ ██╗     ██╗██╗   ██╗███████╗
-██║  ██║██╔══██╗██║     ██║██║   ██║██╔════╝
-███████║███████║██║     ██║██║   ██║█████╗
-██╔══██║██╔══██║██║     ██║╚██╗ ██╔╝██╔══╝
-██║  ██║██║  ██║███████╗██║ ╚████╔╝ ███████╗
-╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═══╝  ╚══════╝
-```
-Live recompiler for Haskell
+This is my fork of halive, using a halive.json file for configuration instead of command line arguments.
+In the halive.json configuration I exposed the ability to add GHC extensions that should be loaded project-wide.
+This provides a solution for https://github.com/lukexi/halive/issues/26
 
-![Halive Demo](http://lukexi.github.io/HaliveDemo.gif)
+I also added a ruby script that allows one to easily run a single .hs file using halive.
+Usage:
+`sudo apt install ruby # if you don't have ruby installed`
+`./tools/runwithhalive myprogram.hs`
+or to run it from anywhere:
+`sudo cp ./tools/runwithhalive /usr/local/bin`
+then:
+`runwithhalive myprogram.hs`
+
+---
+
+Live recompiler for Haskell
 
 Halive uses the GHC API to instantly recompile
 and reload your code any time you change it.
@@ -16,9 +21,19 @@ and reload your code any time you change it.
 Usage:
 `stack install halive`
 
-and then
+You have to create a configuration file called halive.json in your project directory.
+Run halive without arguments to see an example halive.json that you can copy/paste.
 
-`halive <path/to/mymain.hs> <extra-include-dirs>`
+`halive`
+
+Adjust it, then re-run halive from inside your project directory.
+hcfgExtensions is a list of default GHC extensions to use accross all modules (like default-extensions in stack.yaml).
+
+`halive`
+
+it is also possible to specify an alternative config file path
+
+`halive -cfg otherhalive.json`
 
 Any time you change a file in the current directory or its subdirectories,
 halive will recompile and rerun the `main` function in the file you gave it.
@@ -60,9 +75,7 @@ Watch custom file types for changes
 
 By default, Halive will reload your code when files with the following extensions change: `hs`, `pd`, `frag`, `vert`.
 
-If you have any other file type that you'd like to be watched by Halive, use the `-f`/`--file-type` option.
-
-`halive app/Main.hs -f html -f hamlet`
+If you have any other file type that you'd like to be watched by Halive, set them in your halive.json
 
 Passing command-line arguments
 ------------------------------
@@ -71,10 +84,17 @@ To use Halive with haskell code that is expecting command-line arguments,
 separate the arguments to Halive and the arguments to the app with a `--`
 such as:
 
-`halive <path/to/mymain.hs> <extra-include-dirs> -- <args-to-myapp>`
+`halive -- <args-to-myapp>`
 
 Compiled Code
 -------------
+
+Note: This feature seems to be broken at the moment, at least on lts-17.6
+Failing with the following error
+`<interactive>: fatal:
+    cannot find object file ‘.halive/Main.dyn_o’
+    while linking an interpreted expression`
+
 You can pass `--compiled` (or `-c`) to Halive to compile to faster object code.
 
 This will be slower to recompile but faster to run.

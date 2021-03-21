@@ -1,0 +1,16 @@
+#!/usr/bin/ruby
+
+require "json.rb"
+
+f = ARGV[0]
+unless f && File.file?(f)
+    puts "usage: runwithhalive script.hs"
+    exit 1
+end
+
+conf = {"hcfgFileTypes"=>["hs", "pd", "frag", "vert"], "hcfgMainFilePath"=> f, "hcfgExtensions"=>[], "hcfgIncludeDirs"=>[]}
+conf_json = JSON.generate conf
+json_path = "/tmp/runwithhalive_halive.json"
+File.write json_path, conf_json
+cmd = "halive -cfg #{json_path}"
+system cmd

@@ -5,3 +5,4 @@ dist
 Main
 .cabal-sandbox
 .stack-work
+stack.yaml.lock

@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE QuasiQuotes #-}
 
 #if !MIN_VERSION_base(4,8,0)
 import Control.Applicative
@@ -16,7 +17,51 @@ import Control.Concurrent.STM
 import Halive.SubHalive
 import Halive.Recompiler
 import Halive.Args
-import System.FilePath
+import Halive.Cfg (Cfg(..), decodeCfg)
+import NeatInterpolation
+import qualified Data.Text.IO as T (putStrLn)
+
+usage :: String
+usage = "Usage: halive [-cfg] [-c|--compiled] [-- <args to myapp>]\n\
+         Available options:\n\
+           -cfg <halive.json>              Path to config file (default: halive.json)\n\
+           -c, --compiled                  Faster code (but slower compilation)"
+
+tryReadCfg :: String -> IO (Maybe Cfg)
+tryReadCfg cfgPath = do
+    res <- try (readFile cfgPath) :: IO (Either SomeException String)
+    case res of
+        Left _ -> do
+            putStrLn $ "\nCould not read the config file at " ++ cfgPath
+            putStrLn $ "\nYou have to create a halive.json in your project directory."
+            putStrLn $ "Example:\n"
+            T.putStrLn [trimming|
+                {
+                    "hcfgFileTypes": [
+                        "hs",
+                        "pd",
+                        "frag",
+                        "vert"
+                    ],
+                    "hcfgMainFilePath": "app/Main.hs",
+                    "hcfgExtensions": [
+                        "OverloadedStrings"
+                    ],
+                    "hcfgIncludeDirs": [
+                        "src"
+                    ]
+                }
+            |]
+            putStrLn ""
+            return Nothing
+        Right file -> do
+            case (decodeCfg file) of
+                Left e -> do
+                    putStrLn $ "Error while trying to parse: " ++ cfgPath
+                    putStrLn $ "Error: "
+                    putStrLn e
+                    return Nothing
+                Right cfg -> return $ Just cfg
 
 main :: IO ()
 main = do
@@ -24,33 +69,35 @@ main = do
     case args of
         Nothing -> putStrLn usage
         Just Args {..} -> do
-            let mainFilePath = dropFileName mainFileName
             setEnv "Halive Active" "Yes"
             putStrLn banner
-            withArgs targetArgs $
-                startRecompiler (fileTypes ++ defaultFileTypes) mainFileName
-                    (mainFilePath:includeDirs)
-                    shouldCompile
+            let compMode = if shouldCompile then Compiled else Interpreted
+            let cfgPath' = case cfgPath of
+                            Nothing -> "halive.json"
+                            Just x -> x
 
-defaultFileTypes :: [FileType]
-defaultFileTypes = ["hs", "pd", "frag", "vert"]
+            result <- tryReadCfg cfgPath'
+            case result of
+                Nothing -> putStrLn usage
+                Just hcfg -> withArgs targetArgs $ startRecompiler hcfg compMode
 
 printBanner :: String -> IO ()
 printBanner title = putStrLn $ ribbon ++ " " ++ title ++ " " ++ ribbon
     where ribbon = replicate 25 '*'
 
-startRecompiler :: [FileType] -> FilePath -> [FilePath] -> Bool -> IO b
-startRecompiler fileTypes mainFileName includeDirs shouldCompile = do
+startRecompiler :: Cfg -> CompilationMode -> IO b
+startRecompiler hcfg compMode = do
     ghc <- startGHC
         (defaultGHCSessionConfig
-            { gscImportPaths = includeDirs
-            , gscCompilationMode = if shouldCompile then Compiled else Interpreted
+            { gscImportPaths = hcfgIncludeDirs hcfg
+            , gscCompilationMode = compMode
+            , gscLanguageExtensions = hcfgExtensions hcfg
             })
 
     recompiler <- recompilerWithConfig ghc RecompilerConfig
-        { rccWatchAll = Just (".", fileTypes)
+        { rccWatchAll = Just (".", (hcfgFileTypes hcfg))
         , rccExpressions = ["main"]
-        , rccFilePath = mainFileName
+        , rccFilePath = hcfgMainFilePath hcfg
         }
 
     mainThreadId <- myThreadId

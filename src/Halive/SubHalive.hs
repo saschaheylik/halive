@@ -51,7 +51,7 @@ import qualified Data.Text as Text
 
 data FixDebounce = DebounceFix | NoDebounceFix deriving Eq
 
-data CompliationMode = Interpreted | Compiled deriving Eq
+data CompilationMode = Interpreted | Compiled deriving (Eq, Show)
 
 data KeepLibsInMemory = Always | Opportunistic
 
@@ -67,7 +67,7 @@ data GHCSessionConfig = GHCSessionConfig
     , gscLanguageExtensions :: [ExtensionFlag]
     , gscNoLanguageExtensions :: [ExtensionFlag]
 #endif
-    , gscCompilationMode    :: CompliationMode
+    , gscCompilationMode    :: CompilationMode
     , gscStartupFile        :: Maybe (FilePath, String)
         -- ^ Allow API users to block until a given file is compiled,
         -- to work around a bug where the GHC API crashes while
