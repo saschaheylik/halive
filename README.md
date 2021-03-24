@@ -2,6 +2,10 @@ This is my fork of halive, using a halive.json file for configuration instead of
 In the halive.json configuration I exposed the ability to add GHC extensions that should be loaded project-wide.
 This provides a solution for https://github.com/lukexi/halive/issues/26
 
+To disable implicit Prelude (maybe you want to use another prelude like Relude instead) in
+halive.json you have to add "ImplicitPrelude" (as in the usage example) under
+"cfgDisableExtensions" instead of adding "NoImplicitPrelude" to "cfgExtensions".
+
 I also added a ruby script that allows one to easily run a single .hs file using halive.
 Usage:
 `sudo apt install ruby # if you don't have ruby installed`
@@ -27,7 +31,7 @@ Run halive without arguments to see an example halive.json that you can copy/pas
 `halive`
 
 Adjust it, then re-run halive from inside your project directory.
-hcfgExtensions is a list of default GHC extensions to use accross all modules (like default-extensions in stack.yaml).
+cfgExtensions is a list of default GHC extensions to use accross all modules (like default-extensions in stack.yaml).
 
 `halive`
 

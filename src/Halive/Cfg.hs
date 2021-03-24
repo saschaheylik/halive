@@ -13,10 +13,11 @@ import Data.Aeson.TH (deriveJSON, defaultOptions)
 import Data.ByteString.Lazy.Char8 as BL (pack)
 
 data Cfg = Cfg {
-      hcfgFileTypes :: [FileType]
-    , hcfgMainFilePath :: FilePath
-    , hcfgIncludeDirs :: [FilePath]
-    , hcfgExtensions :: [Extension]
+      cfgFileTypes :: [FileType]
+    , cfgMainFilePath :: FilePath
+    , cfgIncludeDirs :: [FilePath]
+    , cfgExtensions :: [Extension]
+    , cfgDisableExtensions :: [Extension]
 } deriving (Eq, Show)
 $(deriveJSON defaultOptions ''Extension)
 $(deriveJSON defaultOptions ''Cfg)

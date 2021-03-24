@@ -37,17 +37,20 @@ tryReadCfg cfgPath = do
             putStrLn $ "Example:\n"
             T.putStrLn [trimming|
                 {
-                    "hcfgFileTypes": [
+                    "cfgFileTypes": [
                         "hs",
                         "pd",
                         "frag",
                         "vert"
                     ],
-                    "hcfgMainFilePath": "app/Main.hs",
-                    "hcfgExtensions": [
+                    "cfgMainFilePath": "app/Main.hs",
+                    "cfgExtensions": [
                         "OverloadedStrings"
                     ],
-                    "hcfgIncludeDirs": [
+                    "cfgDisableExtensions": [
+                        "ImplicitPrelude"
+                    ],
+                    "cfgIncludeDirs": [
                         "src"
                     ]
                 }
@@ -79,25 +82,26 @@ main = do
             result <- tryReadCfg cfgPath'
             case result of
                 Nothing -> putStrLn usage
-                Just hcfg -> withArgs targetArgs $ startRecompiler hcfg compMode
+                Just cfg -> withArgs targetArgs $ startRecompiler cfg compMode
 
 printBanner :: String -> IO ()
 printBanner title = putStrLn $ ribbon ++ " " ++ title ++ " " ++ ribbon
     where ribbon = replicate 25 '*'
 
 startRecompiler :: Cfg -> CompilationMode -> IO b
-startRecompiler hcfg compMode = do
+startRecompiler cfg compMode = do
     ghc <- startGHC
         (defaultGHCSessionConfig
-            { gscImportPaths = hcfgIncludeDirs hcfg
+            { gscImportPaths = cfgIncludeDirs cfg
             , gscCompilationMode = compMode
-            , gscLanguageExtensions = hcfgExtensions hcfg
+            , gscLanguageExtensions = cfgExtensions cfg
+            , gscNoLanguageExtensions = cfgDisableExtensions cfg
             })
 
     recompiler <- recompilerWithConfig ghc RecompilerConfig
-        { rccWatchAll = Just (".", (hcfgFileTypes hcfg))
+        { rccWatchAll = Just (".", (cfgFileTypes cfg))
         , rccExpressions = ["main"]
-        , rccFilePath = hcfgMainFilePath hcfg
+        , rccFilePath = cfgMainFilePath cfg
         }
 
     mainThreadId <- myThreadId

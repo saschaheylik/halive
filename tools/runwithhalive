@@ -8,7 +8,7 @@ unless f && File.file?(f)
     exit 1
 end
 
-conf = {"hcfgFileTypes"=>["hs", "pd", "frag", "vert"], "hcfgMainFilePath"=> f, "hcfgExtensions"=>[], "hcfgIncludeDirs"=>[]}
+conf = {"cfgFileTypes"=>["hs", "pd", "frag", "vert"], "cfgMainFilePath"=> f, "cfgExtensions"=>[], "cfgIncludeDirs"=>[], "cfgDisableExtensions"=>[]}
 conf_json = JSON.generate conf
 json_path = "/tmp/runwithhalive_halive.json"
 File.write json_path, conf_json
